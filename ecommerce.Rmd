@@ -1,0 +1,146 @@
+---
+title: "ecom2"
+output: github_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Insalling libraries
+library(readr)
+library(rfm)
+library(skimr)
+library(ggplot2)
+library(gganimate)  
+library(janitor)
+library(plyr)
+library(lubridate)
+library(dplyr)
+library(knitr)
+library(tableHTML)
+library(treemap)
+
+
+
+#Importing the dataset
+```
+
+##Importing the dataset
+
+```{r importing data}
+
+retailsales <- read.csv("eCommerce Dataset - data.csv")
+```
+
+##Getting to know the data
+
+
+```{r pressure}
+glimpse(retailsales)
+
+head(retailsales)
+```
+
+## Top 5 rows of the data
+
+```{r top5}
+
+
+head(retailsales,5)
+```
+
+
+#Running summarises of the dataset 
+
+```{r dup}
+#Removing possible duplicates
+
+retailsales2 <- unique(retailsales)
+
+#Noticed null values in the Customer ID column during exploration, removing them
+
+retailsales2 <- na.omit(retailsales2, select = c("CustomerID"))
+```
+
+###Noticed null values in the Customer ID column during exploration, removing them
+
+```{r nullvalues}
+
+retailsales2 <- na.omit(retailsales2, select = c("CustomerID"))
+```
+
+
+#Converting the date column from character format to a date time format
+
+```{r con}
+str(retailsales2$InvoiceDate) #Confirming the 'InvoiceDate' column has changed to date time format
+glimpse(retailsales2$InvoiceDate)
+retailsales2$InvoiceDate <- as.Date(retailsales2$InvoiceDate)
+```
+
+
+
+```{r con2}
+
+
+
+#The cancelled order contain an 'InvoiceNo' that begins with a 'C', we won't be needing those for this analysis as our focus are our most valuable customers
+
+retailsales2 <- retailsales2[!grepl("^C", retailsales2$InvoiceNo), ]
+head(retailsales2$InvoiceNo)
+```
+
+
+###The cancelled order contain an 'InvoiceNo' that begins with a 'C', we won't be needing those for this analysis as our focus are our most valuable customers
+
+```{r can}
+
+
+#Dropping the 'StockCode,' and 'Description' column as they won't be necessary for the analysis
+
+retailsales2 <- retailsales2 %>%  
+  select(-c( StockCode,Description))
+
+#The cancelled order contain an 'InvoiceNo' that begins with a 'C', we won't be needing those for this analysis as our focus are our most valuable customers
+
+retailsales2 <- retailsales2[!grepl("^C", retailsales2$InvoiceNo), ]
+head(retailsales2$InvoiceNo)
+```
+
+
+
+##Exploratory data analysis 
+
+###Calculating the revenue and including a revenue column
+
+```{r exp2}
+
+#retailsales2$revenue <- paste0("?", formatC(retailsales2$revenue, format = "f", digits = 2, big.mark = ","))
+#glimpse(retailsales2$revenue)
+
+retailsales2$revenue <- retailsales2$Quantity * retailsales2$UnitPrice
+head(retailsales2$revenue)
+
+```
+
+
+#Extracting month from the 'InovoiceDate'column
+
+
+```{r exp}
+library(tidyr)
+retailsales3<-retailsales2 %>% 
+              
+                      mutate(InvoiceDate = as_datetime(InvoiceDate), month_col=month(InvoiceDate,label = TRUE,abbr=FALSE), sort_mnt  =month(InvoiceDate)) %>% 
+ drop_na()
+
+
+ggplot(retailsales3, aes(x = month_col, y = revenue)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(x = "Month", y = "Revenue", title = "Revenue by Month")+
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE))+ coord_flip()  # Formatting y-axis labels
+  
+
+
+```
